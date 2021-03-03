@@ -10,7 +10,23 @@ if(waypoints_file == null,
 );
 
 list(author) -> (
-
+	player = player();
+	if(author != null && !has(global_authors, author), _error(author + ' has not set any waypoints'));
+	print(player, format('bc === List of current waypoints ==='));
+	for(pairs(global_waypoints),
+		data = _:1;
+		if(author == null || author==data:2,
+			print(format( 
+				'by \ \ '+_:0 , 
+				'^g ' + if(data:1, data:1, 'No description'),
+				str('w : %s %s %s ', map(data:0, round(_))),
+				str('!/%s tp %s', system_info('app_name'), _:0),
+				'^g Click to teleport!',
+				'g by ',
+				str('gb %s', data:2)
+			))
+		)
+	)
 );
 
 del(name) -> (
@@ -39,8 +55,7 @@ tp(name) -> (
     loc = global_waypoints:name:0;
     if(loc == null, _error('That waypoint does not exist'));
     print('Teleporting ' +player()+ ' to ' + name);
-    run(('tp '+player()+ ' ' + loc:0 + ' ' + loc:1 + ' ' + loc:2));
-    return();
+    run(str('tp %s %s %s %s', player(), loc:0, loc:1, loc:2));
 );
 
 _error(msg)->(
@@ -51,6 +66,7 @@ _error(msg)->(
 __command() -> '';
 __config() -> {
     'scope'->'global',
+	'stay_loaded'->true,
    'commands' -> 
    {
       'del <waypoint>' -> 'del',
