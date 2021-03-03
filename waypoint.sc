@@ -51,6 +51,12 @@ add(name, poi_pos, description) -> (
 	);
 );
 
+edit(name, description) -> (
+	if(!has(global_waypoints, name), _error('That waypoint does not exist'));
+	global_waypoints:name:1 = description;
+	print(player(), format('g Edited waypoints description'))
+);
+
 tp(name) -> (
     loc = global_waypoints:name:0;
     if(loc == null, _error('That waypoint does not exist'));
@@ -73,6 +79,7 @@ __config() -> {
       'add <name>' -> ['add', null, null],
 	  'add <name> <pos>' -> ['add', null],
 	  'add <name> <pos> <description>' -> 'add',
+	  'edit <waypoint> <description>' -> 'edit',
       'tp <waypoint>' -> 'tp',
 	  'list' -> ['list', null],
       'list <author>' -> 'list',
@@ -96,8 +103,3 @@ __config() -> {
       },
    }
 };
-
-
-
-
-
