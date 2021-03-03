@@ -39,7 +39,7 @@ __config() -> {
    'arguments' -> {
       'waypoint' -> {
             'type' -> 'term',
-            'suggester'-> _(args) -> keys(global_waypoints),
+            'suggester'-> _(args) -> copy(keys(global_waypoints)),
       }    
    }
 };
