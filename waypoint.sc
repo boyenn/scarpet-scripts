@@ -48,8 +48,8 @@ add(name, poi_pos, description) -> (
 		// else, add new one
 		player = player();
 		if(poi_pos==null, poi_pos=player~'pos');
-		global_waypoints:name = [poi_pos, description, player, player~'dimension'];
-		global_authors += player;
+		global_waypoints:name = [poi_pos, description, str(player), player~'dimension'];
+		global_authors += str(player);
 		global_dimensions += player~'dimension';
 		print(player, format(
 			'g Added new waypoint ',
