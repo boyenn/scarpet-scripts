@@ -2,8 +2,16 @@ waypoints_file = read_file('waypoints','JSON');
 saveSystem() -> (
     write_file('waypoints', 'JSON',global_waypoints);
 );
-if(waypoints_file == null, global_waypoints = {'Origin' ->[[0,100,0], null, null]); saveSystem();, global_waypoints = waypoints_file; );
-list() -> print(global_waypoints);
+global_authors = {};
+if(waypoints_file == null, 
+	global_waypoints = {'Origin' ->[[0,100,0], null, null]); saveSystem(), 
+	global_waypoints = waypoints_file; 
+	map(values(global_waypoints), if( (auth = _:2) != null, global_authors += auth))
+);
+
+list(author) -> (
+
+);
 
 del(name) -> (
     if(delete(global_waypoints,name),print('Waypoint ' + name + ' deleted.'), _error('Waypoint ' + name + ' does not exist'));
@@ -13,10 +21,11 @@ del(name) -> (
 add(name, poi_pos, description) -> (
 	if(has(global_waypoints, name), 
 		_error('You are trying to overwrite an existing waypoint. Delete it first.'),
-		// else, add
+		// else, add new one
 		player = player();
 		if(poi_pos==null, poi_pos=player~'pos');
 		global_waypoints:name = [poi_pos, description, player];
+		global_authors += player;
 		print(player, format(
 			'g Added new waypoint ',
 			str('bg %s ', name),
@@ -28,7 +37,6 @@ add(name, poi_pos, description) -> (
 
 tp(name) -> (
     loc = global_waypoints:name:0;
-	print(loc);
     if(loc == null, _error('That waypoint does not exist'));
     print('Teleporting ' +player()+ ' to ' + name);
     run(('tp '+player()+ ' ' + loc:0 + ' ' + loc:1 + ' ' + loc:2));
@@ -50,8 +58,8 @@ __config() -> {
 	  'add <name> <pos>' -> ['add', null],
 	  'add <name> <pos> <description>' -> 'add',
       'tp <waypoint>' -> 'tp',
-
-      'list' -> 'list'
+	  'list' -> ['list', null],
+      'list <author>' -> 'list',
    },
    'arguments' -> {
       'waypoint' -> {
@@ -66,6 +74,10 @@ __config() -> {
 			'type' -> 'text',
 			'suggest' -> [],
 	  },
+	  'author' -> {
+            'type' -> 'term',
+            'suggester'-> _(args) -> copy(keys(global_authors)),
+      },
    }
 };
 
