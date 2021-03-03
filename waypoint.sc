@@ -64,6 +64,17 @@ tp(name) -> (
     run(str('tp %s %s %s %s', player(), loc:0, loc:1, loc:2));
 );
 
+help() -> (
+	player = player();
+	print(player, format('by ==Help for the Waypoints app=='));
+	print(player, format(str('g the following commands are available with /%s', system_info('app_name')) ));
+	print(player, format('b \ \ add <name> [pos] [description]', 'w : add a new waypoint at given position with given description'));
+	print(player, format('b \ \ del <waypoint>', 'w : delete existing waypoint'));
+	print(player, format('b \ \ edit <waypoint> <description>', 'w : edit the description of an existing waypoint'));
+	print(player, format('b \ \ list [author]', 'w : list all existing waypoints, optionally filtering by author'));
+	print(player, format('b \ \ tp <waypoint>', 'w : teleport to given waypoint'));	
+);
+
 _error(msg)->(
 	print(player(), format(str('r %s', msg)));
 	exit()
@@ -75,6 +86,7 @@ __config() -> {
 	'stay_loaded'->true,
    'commands' -> 
    {
+	  '' -> 'help',
       'del <waypoint>' -> 'del',
       'add <name>' -> ['add', null, null],
 	  'add <name> <pos>' -> ['add', null],
