@@ -1,3 +1,11 @@
+global_waypoint_config = {
+    // Config option to allow players to tp to the waypoints ( Either via `/waypoint list` or `/waypoint tp` ) 
+    // 0 : NEVER
+    // 1 : CREATIVE
+    // 2 : ALWAYS
+    'allow_tp' -> 1
+};
+
 waypoints_file = read_file('waypoints','JSON');
 saveSystem() -> (
     write_file('waypoints', 'JSON',global_waypoints);
@@ -27,8 +35,8 @@ list(author) -> (
 					'by \ \ '+name , 
 					'^g ' + if(data:1, data:1, 'No description'),
 					str('w : %s %s %s ', map(data:0, round(_))),
-					str('!/%s tp %s', system_info('app_name'), name),
-					'^g Click to teleport!',
+					if(_is_tp_allowed(), str('!/%s tp %s', system_info('app_name'), name)),
+                    if(_is_tp_allowed(), '^g Click to teleport!'),
 					'g by ',
 					str('gb %s', data:2)
 				))
@@ -67,6 +75,7 @@ edit(name, description) -> (
 );
 
 tp(name) -> (
+    if(!_is_tp_allowed(), _error('You are prohibited from teleporting to waypoints.')); // Should never happen
     loc = global_waypoints:name:0;
 	dim = global_waypoints:name:3;
     if(loc == null, _error('That waypoint does not exist'));
@@ -90,30 +99,35 @@ _error(msg)->(
 	exit()
 );
 
-__command() -> '';
-__config() -> {
-    'scope'->'global',
-	'stay_loaded'->true,
-   'commands' -> 
-   {
+_is_tp_allowed() -> (get(global_waypoint_config,'allow_tp') == 2 || (get(global_waypoint_config,'allow_tp') == 1 && get(system_info(),'game_default_gamemode') == 'creative'));
+_get_commands() -> (
+    base_commands = {
 	  '' -> 'help',
       'del <waypoint>' -> 'del',
       'add <name>' -> ['add', null, null],
 	  'add <name> <pos>' -> ['add', null],
 	  'add <name> <pos> <description>' -> 'add',
 	  'edit <waypoint> <description>' -> 'edit',
-      'tp <waypoint>' -> 'tp',
 	  'list' -> ['list', null],
       'list <author>' -> 'list',
-   },
-   'arguments' -> {
+   };
+   if(_is_tp_allowed(), put(base_commands, 'tp <waypoint>', 'tp'));
+   base_commands;
+);
+
+__command() -> '';
+__config() -> {
+    'scope'->'global',
+	'stay_loaded'-> true,
+    'commands' -> _get_commands(),
+    'arguments' -> {
       'waypoint' -> {
             'type' -> 'term',
-            'suggester'-> _(args) -> copy(keys(global_waypoints)),
+            'suggester'-> _(args) -> keys(global_waypoints),
       },
 	  'name' -> {
 			'type' -> 'term',
-			'suggest' -> [], //to make it not suggest anything
+			'suggest' -> [], // to make it not suggest anything
 	  },
 	  'description' -> {
 			'type' -> 'text',
@@ -121,7 +135,8 @@ __config() -> {
 	  },
 	  'author' -> {
             'type' -> 'term',
-            'suggester'-> _(args) -> copy(keys(global_authors)),
+            'suggester'-> _(args) -> keys(global_authors),
       },
    }
+   
 };
