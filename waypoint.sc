@@ -3,7 +3,7 @@ global_waypoint_config = {
     // 0 : NEVER
     // 1 : CREATIVE
     // 2 : ALWAYS
-    'allow_tp' -> 1
+    'allow_tp' -> 0
 };
 
 waypoints_file = read_file('waypoints','JSON');
@@ -103,7 +103,7 @@ help() -> (
 	print(player, format('b \ \ del <waypoint>', 'w : delete existing waypoint'));
 	print(player, format('b \ \ edit <waypoint> <description>', 'w : edit the description of an existing waypoint'));
 	print(player, format('b \ \ list [author]', 'w : list all existing waypoints, optionally filtering by author'));
-	print(player, format('b \ \ tp <waypoint>', 'w : teleport to given waypoint'));	
+	if(_is_tp_allowed(),  print(player, format('b \ \ tp <waypoint>', 'w : teleport to given waypoint')));	
 );
 
 _error(msg)->(
