@@ -21,6 +21,26 @@ if(waypoints_file == null,
 	);
 );
 
+_get_list_item(name, data) -> (
+	desc = if(data:1, '^g ' + data:1);
+	cond_desc = if(!_is_tp_allowed(), desc);
+	item = ['by \ \ '+name , desc, str('w : %s %s %s ', map(data:0, round(_)))];
+	if(_is_tp_allowed(), 
+		item += str('!/%s tp %s', system_info('app_name'), name);
+		item += '^g Click to teleport!',
+		// if tp is not allowed, append description tooltip
+		item += desc
+	);
+	if(data:2, 
+		item += 'g by ';
+		item += cond_desc;
+		item += 'gb '+data:2;
+		//if(!_is_tp_allowed(), item += desc)
+		item += cond_desc;
+	);
+	item
+);
+
 list(author) -> (
 	player = player();
 	if(author != null && !has(global_authors, author), _error(author + ' has not set any waypoints'));
@@ -31,15 +51,7 @@ list(author) -> (
 		for(pairs(global_waypoints),
 			[name, data]= _;
 			if(current_dim== data:3 && (author == null || author==data:2),
-				print(player, format( 
-					'by \ \ '+name , 
-					'^g ' + if(data:1, data:1, 'No description'),
-					str('w : %s %s %s ', map(data:0, round(_))),
-					if(_is_tp_allowed(), str('!/%s tp %s', system_info('app_name'), name)),
-                    if(_is_tp_allowed(), '^g Click to teleport!'),
-					'g by ',
-					str('gb %s', data:2)
-				))
+				print(player, format( _get_list_item(name, data)))
 			)
 		)
 	)
@@ -71,7 +83,7 @@ add(name, poi_pos, description) -> (
 edit(name, description) -> (
 	if(!has(global_waypoints, name), _error('That waypoint does not exist'));
 	global_waypoints:name:1 = description;
-	print(player(), format('g Edited waypoints description'))
+	print(player(), format('g Edited waypoint\'s description'))
 );
 
 tp(name) -> (
@@ -99,7 +111,7 @@ _error(msg)->(
 	exit()
 );
 
-_is_tp_allowed() -> (get(global_waypoint_config,'allow_tp') == 2 || (get(global_waypoint_config,'allow_tp') == 1 && get(system_info(),'game_default_gamemode') == 'creative'));
+_is_tp_allowed() -> (get(global_waypoint_config,'allow_tp') == 2 || (get(global_waypoint_config,'allow_tp') == 1 && system_info('game_default_gamemode') == 'creative'));
 _get_commands() -> (
     base_commands = {
 	  '' -> 'help',
@@ -115,7 +127,6 @@ _get_commands() -> (
    base_commands;
 );
 
-__command() -> '';
 __config() -> {
     'scope'->'global',
 	'stay_loaded'-> true,
