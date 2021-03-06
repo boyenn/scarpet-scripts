@@ -3,7 +3,7 @@ global_waypoint_config = {
     // 0 : NEVER
     // 1 : CREATIVE
     // 2 : ALWAYS
-    'allow_tp' -> 0
+    'allow_tp' -> 2
 };
 
 waypoints_file = read_file('waypoints','JSON');
@@ -21,11 +21,11 @@ if(waypoints_file == null,
 	);
 );
 
-_get_list_item(name, data) -> (
+_get_list_item(name, data, tp_allowed) -> (
 	desc = if(data:1, '^g ' + data:1);
-	cond_desc = if(!_is_tp_allowed(), desc);
+	cond_desc = if(!tp_allowed, desc);
 	item = ['by \ \ '+name , desc, str('w : %s %s %s ', map(data:0, round(_)))];
-	if(_is_tp_allowed(), 
+	if(tp_allowed, 
 		item += str('!/%s tp %s', system_info('app_name'), name);
 		item += '^g Click to teleport!',
 		// if tp is not allowed, append description tooltip
@@ -45,13 +45,15 @@ list(author) -> (
 	player = player();
 	if(author != null && !has(global_authors, author), _error(author + ' has not set any waypoints'));
 	print(player, format('bc === List of current waypoints ==='));
+	tp_allowed = _is_tp_allowed();
 	for(global_dimensions,
 		current_dim = _;
-		print(player, format('l in '+current_dim));
+		dim_already_printed = false;
 		for(pairs(global_waypoints),
 			[name, data]= _;
 			if(current_dim== data:3 && (author == null || author==data:2),
-				print(player, format( _get_list_item(name, data)))
+				if(!dim_already_printed, print(player, format('l in '+current_dim)); dim_already_printed=true); // to avoid printing dim header when filtering authors
+				print(player, format( _get_list_item(name, data, tp_allowed)))
 			)
 		)
 	)
