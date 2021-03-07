@@ -1,10 +1,18 @@
 global_waypoint_config = {
     // Config option to allow players to tp to the waypoints ( Either via `/waypoint list` or `/waypoint tp` ) 
-    // 0 : NEVER
-    // 1 : CREATIVE
-    // 2 : ALWAYS
-    'allow_tp' -> 2
+	// 0 : NEVER
+	// 1 : CREATIVE PLAYERS
+	// 2 : CREATIVE AND SPECTATOR PLAYERS
+	// 3 : ALWAYS
+    'allow_tp' -> 3
 };
+
+_can_player_tp() -> (
+	global_waypoint_config:'allow_tp' == 3 || 
+	( global_waypoint_config:'allow_tp' == 1 && player()~'gamemode'=='creative') ||
+	( global_waypoint_config:'allow_tp' == 2 && player()~'gamemode_id'%2)
+);
+_is_tp_allowed() -> global_waypoint_config:'allow_tp'; // anything but 0 will give boolean true
 
 waypoints_file = read_file('waypoints','JSON');
 saveSystem() -> (
@@ -45,7 +53,7 @@ list(author) -> (
 	player = player();
 	if(author != null && !has(global_authors, author), _error(author + ' has not set any waypoints'));
 	print(player, format('bc === List of current waypoints ==='));
-	tp_allowed = _is_tp_allowed();
+	tp_allowed = _can_player_tp();
 	for(global_dimensions,
 		current_dim = _;
 		dim_already_printed = false;
@@ -89,7 +97,7 @@ edit(name, description) -> (
 );
 
 tp(name) -> (
-    if(!_is_tp_allowed(), _error('You are prohibited from teleporting to waypoints.')); // Should never happen
+    if(!_can_player_tp(), _error(str('%s players are not allowed to teleport', player()~'gamemode')) ); //for modes 1 and 2
     loc = global_waypoints:name:0;
 	dim = global_waypoints:name:3;
     if(loc == null, _error('That waypoint does not exist'));
@@ -113,7 +121,6 @@ _error(msg)->(
 	exit()
 );
 
-_is_tp_allowed() -> (get(global_waypoint_config,'allow_tp') == 2 || (get(global_waypoint_config,'allow_tp') == 1 && system_info('game_default_gamemode') == 'creative'));
 _get_commands() -> (
     base_commands = {
 	  '' -> 'help',
