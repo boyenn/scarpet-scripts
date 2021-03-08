@@ -3,12 +3,14 @@ global_waypoint_config = {
 	// 0 : NEVER
 	// 1 : CREATIVE PLAYERS
 	// 2 : CREATIVE AND SPECTATOR PLAYERS
-	// 3 : ALWAYS
-    'allow_tp' -> 3
+	// 3 : OP PLAYERS
+	// 4 : ALWAYS
+    'allow_tp' -> 2
 };
 
 _can_player_tp() -> (
-	global_waypoint_config:'allow_tp' == 3 || 
+	global_waypoint_config:'allow_tp' == 4 ||
+	( global_waypoint_config:'allow_tp' == 3 && player()~'permission_level' > 1) || 
 	( global_waypoint_config:'allow_tp' == 1 && player()~'gamemode'=='creative') ||
 	( global_waypoint_config:'allow_tp' == 2 && player()~'gamemode_id'%2)
 );
