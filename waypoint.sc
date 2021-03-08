@@ -1,3 +1,19 @@
+global_waypoint_config = {
+    // Config option to allow players to tp to the waypoints ( Either via `/waypoint list` or `/waypoint tp` ) 
+	// 0 : NEVER
+	// 1 : CREATIVE PLAYERS
+	// 2 : CREATIVE AND SPECTATOR PLAYERS
+	// 3 : ALWAYS
+    'allow_tp' -> 3
+};
+
+_can_player_tp() -> (
+	global_waypoint_config:'allow_tp' == 3 || 
+	( global_waypoint_config:'allow_tp' == 1 && player()~'gamemode'=='creative') ||
+	( global_waypoint_config:'allow_tp' == 2 && player()~'gamemode_id'%2)
+);
+_is_tp_allowed() -> global_waypoint_config:'allow_tp'; // anything but 0 will give boolean true
+
 waypoints_file = read_file('waypoints','JSON');
 saveSystem() -> (
     write_file('waypoints', 'JSON',global_waypoints);
@@ -13,25 +29,39 @@ if(waypoints_file == null,
 	);
 );
 
+_get_list_item(name, data, tp_allowed) -> (
+	desc = if(data:1, '^g ' + data:1);
+	cond_desc = if(!tp_allowed, desc);
+	item = ['by \ \ '+name , desc, str('w : %s %s %s ', map(data:0, round(_)))];
+	if(tp_allowed, 
+		item += str('!/%s tp %s', system_info('app_name'), name);
+		item += '^g Click to teleport!',
+		// if tp is not allowed, append description tooltip
+		item += desc
+	);
+	if(data:2, 
+		item += 'g by ';
+		item += cond_desc;
+		item += 'gb '+data:2;
+		//if(!_is_tp_allowed(), item += desc)
+		item += cond_desc;
+	);
+	item
+);
+
 list(author) -> (
 	player = player();
 	if(author != null && !has(global_authors, author), _error(author + ' has not set any waypoints'));
 	print(player, format('bc === List of current waypoints ==='));
+	tp_allowed = _can_player_tp();
 	for(global_dimensions,
 		current_dim = _;
-		print(player, format('l in '+current_dim));
+		dim_already_printed = false;
 		for(pairs(global_waypoints),
 			[name, data]= _;
 			if(current_dim== data:3 && (author == null || author==data:2),
-				print(player, format( 
-					'by \ \ '+name , 
-					'^g ' + if(data:1, data:1, 'No description'),
-					str('w : %s %s %s ', map(data:0, round(_))),
-					str('!/%s tp %s', system_info('app_name'), name),
-					'^g Click to teleport!',
-					'g by ',
-					str('gb %s', data:2)
-				))
+				if(!dim_already_printed, print(player, format('l in '+current_dim)); dim_already_printed=true); // to avoid printing dim header when filtering authors
+				print(player, format( _get_list_item(name, data, tp_allowed)))
 			)
 		)
 	)
@@ -63,10 +93,11 @@ add(name, poi_pos, description) -> (
 edit(name, description) -> (
 	if(!has(global_waypoints, name), _error('That waypoint does not exist'));
 	global_waypoints:name:1 = description;
-	print(player(), format('g Edited waypoints description'))
+	print(player(), format('g Edited waypoint\'s description'))
 );
 
 tp(name) -> (
+    if(!_can_player_tp(), _error(str('%s players are not allowed to teleport', player()~'gamemode')) ); //for modes 1 and 2
     loc = global_waypoints:name:0;
 	dim = global_waypoints:name:3;
     if(loc == null, _error('That waypoint does not exist'));
@@ -82,7 +113,7 @@ help() -> (
 	print(player, format('b \ \ del <waypoint>', 'w : delete existing waypoint'));
 	print(player, format('b \ \ edit <waypoint> <description>', 'w : edit the description of an existing waypoint'));
 	print(player, format('b \ \ list [author]', 'w : list all existing waypoints, optionally filtering by author'));
-	print(player, format('b \ \ tp <waypoint>', 'w : teleport to given waypoint'));	
+	if(_is_tp_allowed(),  print(player, format('b \ \ tp <waypoint>', 'w : teleport to given waypoint')));	
 );
 
 _error(msg)->(
@@ -90,30 +121,33 @@ _error(msg)->(
 	exit()
 );
 
-__command() -> '';
-__config() -> {
-    'scope'->'global',
-	'stay_loaded'->true,
-   'commands' -> 
-   {
+_get_commands() -> (
+    base_commands = {
 	  '' -> 'help',
       'del <waypoint>' -> 'del',
       'add <name>' -> ['add', null, null],
 	  'add <name> <pos>' -> ['add', null],
 	  'add <name> <pos> <description>' -> 'add',
 	  'edit <waypoint> <description>' -> 'edit',
-      'tp <waypoint>' -> 'tp',
 	  'list' -> ['list', null],
       'list <author>' -> 'list',
-   },
-   'arguments' -> {
+   };
+   if(_is_tp_allowed(), put(base_commands, 'tp <waypoint>', 'tp'));
+   base_commands;
+);
+
+__config() -> {
+    'scope'->'global',
+	'stay_loaded'-> true,
+    'commands' -> _get_commands(),
+    'arguments' -> {
       'waypoint' -> {
             'type' -> 'term',
-            'suggester'-> _(args) -> copy(keys(global_waypoints)),
+            'suggester'-> _(args) -> keys(global_waypoints),
       },
 	  'name' -> {
 			'type' -> 'term',
-			'suggest' -> [], //to make it not suggest anything
+			'suggest' -> [], // to make it not suggest anything
 	  },
 	  'description' -> {
 			'type' -> 'text',
@@ -121,7 +155,8 @@ __config() -> {
 	  },
 	  'author' -> {
             'type' -> 'term',
-            'suggester'-> _(args) -> copy(keys(global_authors)),
+            'suggester'-> _(args) -> keys(global_authors),
       },
    }
+   
 };
