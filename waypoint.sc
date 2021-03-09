@@ -31,14 +31,22 @@ if(waypoints_file == null,
 	);
 );
 
-_get_list_item(name, data, tp_allowed) -> (
+_get_list_item(name, data, tp_allowed, player) -> (
 	desc = if(data:1, '^g ' + data:1);
 	cond_desc = if(!tp_allowed, desc);
-	item = ['by \ \ '+name , desc, str('w : %s %s %s ', map(data:0, round(_)))];
+	selected = if(global_track:player == name, 'd X', 'd \ \ ');
+	if(global_track:player == name, 
+		sel_action = str('!/%s track disable', system_info('app_name'));
+		sel_hover = str('^g Click to stop tracking'),
+		sel_action = str('!/%s track %s', system_info('app_name'), name);
+		sel_hover = str('^g Click to start tracking')
+	):
+	print(type(sel_action));
+	item = ['w [', selected, sel_hover, sel_action, 'w ]  ', 'by '+name , desc, str('w : %s %s %s ', map(data:0, round(_)))];
 	if(tp_allowed, 
 		item += str('!/%s tp %s', system_info('app_name'), name);
 		item += '^g Click to teleport!',
-		// if tp is not allowed, append description tooltip
+		// if tp is not allowed, append descripti/read_fileon tooltip
 		item += desc
 	);
 	if(data:2, 
@@ -63,7 +71,7 @@ list(author) -> (
 			[name, data]= _;
 			if(current_dim== data:3 && (author == null || author==data:2),
 				if(!dim_already_printed, print(player, format('l in '+current_dim)); dim_already_printed=true); // to avoid printing dim header when filtering authors
-				print(player, format( _get_list_item(name, data, tp_allowed)))
+				print(player, format( _get_list_item(name, data, tp_allowed, player)))
 			)
 		)
 	)
@@ -110,18 +118,21 @@ tp(name) -> (
 global_track = {};
 track(name) -> (
 	player = player();
-	global_track:player = global_waypoints:name:0;
+	global_track:player = name;
 
 	_track_tick(player);
+
+	print(player, format(str('g Started tracking direction to %s', name)))
 );
 
 _track_tick(player) -> (
 	if(global_track:player,
 		schedule(1, '_track_tick', player),
+		print(player, format('g Stopped tracking direction'));
 		exit();
 	);
 	from = player~'pos' + [0,1,0];
-	destination = global_track:player;
+	destination = global_waypoints:(global_track:player):0;
 	to = 2*(destination-from)/sqrt(reduce(from-destination, _*_+_a, 0));
 	draw_shape('line', 1, 'from', [0,1,0], 'to', to, 'follow', player(), 'player', player);
 );
