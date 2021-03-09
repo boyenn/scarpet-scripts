@@ -107,6 +107,25 @@ tp(name) -> (
     run(str('execute in %s run tp %s %s %s %s', dim, player(), loc:0, loc:1, loc:2));
 );
 
+global_track = {};
+track(name) -> (
+	player = player();
+	global_track:player = global_waypoints:name:0;
+
+	_track_tick(player);
+);
+
+_track_tick(player) -> (
+	if(global_track:player,
+		schedule(1, '_track_tick', player),
+		exit();
+	);
+	from = player~'pos' + [0,1,0];
+	destination = global_track:player;
+	to = 2*(destination-from)/sqrt(reduce(from-destination, _*_+_a, 0));
+	draw_shape('line', 1, 'from', [0,1,0], 'to', to, 'follow', player(), 'player', player);
+);
+
 help() -> (
 	player = player();
 	print(player, format('by ==Help for the Waypoints app=='));
@@ -133,6 +152,8 @@ _get_commands() -> (
 	  'edit <waypoint> <description>' -> 'edit',
 	  'list' -> ['list', null],
       'list <author>' -> 'list',
+      'track <waypoint>' -> 'track',
+      'track disable' -> ['track', null],
    };
    if(_is_tp_allowed(), put(base_commands, 'tp <waypoint>', 'tp'));
    base_commands;
