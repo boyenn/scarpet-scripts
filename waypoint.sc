@@ -123,25 +123,20 @@ _error(msg)->(
 	exit()
 );
 
-_get_commands() -> (
-    base_commands = {
-	  '' -> 'help',
-      'del <waypoint>' -> 'del',
-      'add <name>' -> ['add', null, null],
-	  'add <name> <pos>' -> ['add', null],
-	  'add <name> <pos> <description>' -> 'add',
-	  'edit <waypoint> <description>' -> 'edit',
-	  'list' -> ['list', null],
-      'list <author>' -> 'list',
-   };
-   if(_is_tp_allowed(), put(base_commands, 'tp <waypoint>', 'tp'));
-   base_commands;
-);
-
 __config() -> {
     'scope'->'global',
 	'stay_loaded'-> true,
-    'commands' -> _get_commands(),
+    'commands' -> {
+	if(_is_tp_allowed(), 'tp <waypoint>' -> 'tp', null), //if it's not allowed, then the ''->'' will be overwritten by next line
+	'' -> 'help',
+      	'del <waypoint>' -> 'del',
+      	'add <name>' -> ['add', null, null],
+	'add <name> <pos>' -> ['add', null],
+  	'add <name> <pos> <description>' -> 'add',
+  	'edit <waypoint> <description>' -> 'edit',
+  	'list' -> ['list', null],
+	'list <author>' -> 'list',
+   },
     'arguments' -> {
       'waypoint' -> {
             'type' -> 'term',
