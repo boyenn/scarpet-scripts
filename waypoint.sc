@@ -173,24 +173,30 @@ _track_tick(player) -> (
         exit();
     );
     
-    ppos = player~'pos';
-    from = ppos + [0,1,0];
-    destination = global_waypoints:(global_track:player):0;
-    distance = sqrt(reduce(from-destination, _*_+_a, 0));
-    to = (destination-from);
-    if(!global_settings:splayer:'vector', to = to * 2/distance);
-    voffset = player~'eye_height'*0.6;
+    if( (dim = global_waypoints:(global_track:player):3) == player~'dimension',
+	    ppos = player~'pos';
+	    from = ppos + [0,1,0];
+	    destination = global_waypoints:(global_track:player):0;
+	    distance = sqrt(reduce(from-destination, _*_+_a, 0));
+	    to = (destination-from);
+	    if(!global_settings:splayer:'vector', to = to * 2/distance);
+	    voffset = player~'eye_height'*0.6;
 
-    if( global_settings:splayer:'particles',
-        particle_line('item spectral_arrow 0.8 0.1 1 4', ppos + player~'motion' + [0,voffset,0], ppos + to, 2, player),
-        draw_shape('line', 1, 'from', player~'motion' + [0,voffset,0], 'to', to, 'follow', player(), 'player', player)
-    );
+	    //create direction marker
+	    if( global_settings:splayer:'particles',
+	        particle_line('item spectral_arrow 0.8 0.1 1 4', ppos + player~'motion' + [0,voffset,0], ppos + to, 2, player),
+	        draw_shape('line', 1, 'from', player~'motion' + [0,voffset,0], 'to', to, 'follow', player(), 'player', player)
+	    );
 
-    if(global_settings:splayer:'distance', display_title(player, 'actionbar', str('Distance to %s: %.0fm', global_track:player, distance)));
-    if( (d = global_settings:splayer:'autodisable')!=null && distance <= d, 
-        print(player, format('g You reached your destinaton!')); 
-        global_track:player = null
-    );
+	    // show distance and handkle auto turn off
+	    if(global_settings:splayer:'distance', display_title(player, 'actionbar', str('Distance to %s: %.0fm', global_track:player, distance)));
+	    if( (d = global_settings:splayer:'autodisable')!=null && distance <= d, 
+	        print(player, format('g You reached your destinaton!')); 
+	        global_track:player = null
+	    ),
+	    // else, print bad dimension
+	    display_title(player, 'actionbar', str('Tracking %s in %s', global_track:player, dim) )
+	)
 );
 
 help() -> (
