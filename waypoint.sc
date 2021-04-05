@@ -80,8 +80,13 @@ list(author) -> (
     )
 );
 
+
 del(name) -> (
-    if(delete(global_waypoints,name),print('Waypoint ' + name + ' deleted.'), _error('Waypoint ' + name + ' does not exist'));
+    if(delete(global_waypoints,name),
+    	global_track:player() = null;
+    	print('Waypoint ' + name + ' deleted.'),
+    	//else, failed
+    	_error('Waypoint ' + name + ' does not exist'));
     saveSystem();
 );
 
