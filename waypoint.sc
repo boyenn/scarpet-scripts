@@ -80,11 +80,37 @@ list(author) -> (
     )
 );
 
+del_prompt(name) -> (
+	global_to_delete = name;
+	print(player(), format(
+		'y Are you sure you want to delete ',
+		'yb '+name,
+		'y ? ',
+		'lb [YES] ',
+		str('!/%s confirm_del', system_info('app_name')),
+		'rb [NO]',
+		str('!/%s cancel_del', system_info('app_name')),
+	))
+);
+confirm_del() -> (
+	if(global_to_delete,
+		del(global_to_delete);
+		global_to_delete = null,
+		_error('No deletion to confirm')
+	)
+);
+cancel_del() -> (
+	if(global_to_delete,
+		print(player(), str('Deletion of %s was cancelled', global_to_delete));
+		global_to_delete = null,
+		_error('No deletion to confirm')
+	)
+);
 
 del(name) -> (
     if(delete(global_waypoints,name),
     	global_track:player() = null;
-    	print('Waypoint ' + name + ' deleted.'),
+    	print(player(), 'Waypoint ' + name + ' deleted.'),
     	//else, failed
     	_error('Waypoint ' + name + ' does not exist'));
     saveSystem();
@@ -193,7 +219,9 @@ _settings(key, value) -> (
 _get_commands() -> (
     base_commands = {
       '' -> 'help',
-      'del <waypoint>' -> 'del',
+      'del <waypoint>' -> 'del_prompt',
+      'confirm_del' -> 'confirm_del',
+      'cancel_del' -> 'cancel_del',
       'add <name>' -> ['add', null, null],
       'add <name> <pos>' -> ['add', null],
       'add <name> <pos> <description>' -> 'add',
