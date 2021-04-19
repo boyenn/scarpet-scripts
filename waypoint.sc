@@ -80,8 +80,39 @@ list(author) -> (
     )
 );
 
+del_prompt(name) -> (
+	global_to_delete = name;
+	print(player(), format(
+		'y Are you sure you want to delete ',
+		'yb '+name,
+		'y ? ',
+		'lb [YES] ',
+		str('!/%s confirm_del', system_info('app_name')),
+		'rb [NO]',
+		str('!/%s cancel_del', system_info('app_name')),
+	))
+);
+confirm_del() -> (
+	if(global_to_delete,
+		del(global_to_delete);
+		global_to_delete = null,
+		_error('No deletion to confirm')
+	)
+);
+cancel_del() -> (
+	if(global_to_delete,
+		print(player(), str('Deletion of %s was cancelled', global_to_delete));
+		global_to_delete = null,
+		_error('No deletion to confirm')
+	)
+);
+
 del(name) -> (
-    if(delete(global_waypoints,name),print('Waypoint ' + name + ' deleted.'), _error('Waypoint ' + name + ' does not exist'));
+    if(delete(global_waypoints,name),
+    	global_track:player() = null;
+    	print(player(), 'Waypoint ' + name + ' deleted.'),
+    	//else, failed
+    	_error('Waypoint ' + name + ' does not exist'));
     saveSystem();
 );
 
@@ -142,24 +173,30 @@ _track_tick(player) -> (
         exit();
     );
     
-    ppos = player~'pos';
-    from = ppos + [0,1,0];
-    destination = global_waypoints:(global_track:player):0;
-    distance = sqrt(reduce(from-destination, _*_+_a, 0));
-    to = (destination-from);
-    if(!global_settings:splayer:'vector', to = to * 2/distance);
-    voffset = player~'eye_height'*0.6;
+    if( (dim = global_waypoints:(global_track:player):3) == player~'dimension',
+	    ppos = player~'pos';
+	    from = ppos + [0,1,0];
+	    destination = global_waypoints:(global_track:player):0;
+	    distance = sqrt(reduce(from-destination, _*_+_a, 0));
+	    to = (destination-from);
+	    if(!global_settings:splayer:'vector', to = to * 2/distance);
+	    voffset = player~'eye_height'*0.6;
 
-    if( global_settings:splayer:'particles',
-        particle_line('item spectral_arrow 0.8 0.1 1 4', ppos + player~'motion' + [0,voffset,0], ppos + to, 2, player),
-        draw_shape('line', 1, 'from', player~'motion' + [0,voffset,0], 'to', to, 'follow', player(), 'player', player)
-    );
+	    //create direction marker
+	    if( global_settings:splayer:'particles',
+	        particle_line('item spectral_arrow 0.8 0.1 1 4', ppos + player~'motion' + [0,voffset,0], ppos + to, 2, player),
+	        draw_shape('line', 1, 'from', player~'motion' + [0,voffset,0], 'to', to, 'follow', player(), 'player', player)
+	    );
 
-    if(global_settings:splayer:'distance', display_title(player, 'actionbar', str('Distance to %s: %.0fm', global_track:player, distance)));
-    if( (d = global_settings:splayer:'autodisable')!=null && distance <= d, 
-        print(player, format('g You reached your destinaton!')); 
-        global_track:player = null
-    );
+	    // show distance and handkle auto turn off
+	    if(global_settings:splayer:'distance', display_title(player, 'actionbar', str('Distance to %s: %.0fm', global_track:player, distance)));
+	    if( (d = global_settings:splayer:'autodisable')!=null && distance <= d, 
+	        print(player, format('g You reached your destinaton!')); 
+	        global_track:player = null
+	    ),
+	    // else, print bad dimension
+	    display_title(player, 'actionbar', str('Tracking %s in %s', global_track:player, dim) )
+	)
 );
 
 help() -> (
@@ -188,7 +225,9 @@ _settings(key, value) -> (
 _get_commands() -> (
     base_commands = {
       '' -> 'help',
-      'del <waypoint>' -> 'del',
+      'del <waypoint>' -> 'del_prompt',
+      'confirm_del' -> 'confirm_del',
+      'cancel_del' -> 'cancel_del',
       'add <name>' -> ['add', null, null],
       'add <name> <pos>' -> ['add', null],
       'add <name> <pos> <description>' -> 'add',
