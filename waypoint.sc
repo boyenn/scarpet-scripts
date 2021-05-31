@@ -204,7 +204,7 @@ _track_tick(player) -> (
 
 	    // show distance and handkle auto turn off
 	    if(global_settings:splayer:'distance', display_title(player, 'actionbar', str('Distance to %s: %.0fm', global_track:player, distance)));
-	    if( (d = global_settings:splayer:'autodisable')!=null && distance <= d, 
+	    if( (d = global_settings:splayer:'autodisable')!=-1 && distance <= d, 
 	        print(player, format('g You reached your destinaton!')); 
 	        global_track:player = null
 	    ),
@@ -263,6 +263,9 @@ show_settings() -> (
                     default:(global_settings:splayer:key),
                     if(is_default, default, global_settings:splayer:key)
         );
+        if(name=='autodisable'&&value==-1, value=default);
+        if(name=='length'&&value==-1, value='inf');
+
         modify_cmd = str('?/%s settings track %s ', system_info('app_name'), name);
         modify_tlt = '^g Click me to modify!';
         print(splayer, format(
@@ -272,7 +275,6 @@ show_settings() -> (
             if(is_default, 'g \ (Unmodified value)')
         ))
     );
-    print(global_settings:splayer);
 );
 
 _get_commands() -> (
@@ -296,7 +298,7 @@ _get_commands() -> (
       'settings track type render' ->             _()  -> _settings('particles',false),
       'settings track distance on' ->             _()  -> _settings('distance',true),
       'settings track distance off' ->            _()  -> _settings('distance',false),
-      'settings track autodisable off' ->         _()  -> _settings('autodisable', null),
+      'settings track autodisable off' ->         _()  -> _settings('autodisable', -1),
       'settings track autodisable <distance>' ->  _(d) -> _settings('autodisable', d),
       'settings track width <width>' ->           _(w) -> _settings('width', w),
       'settings track length <length>' ->         _(l) -> _settings('length', l),
